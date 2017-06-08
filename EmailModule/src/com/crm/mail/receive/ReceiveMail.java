@@ -123,12 +123,12 @@ public class ReceiveMail {
 			stringBuilder.append("<From>").append(((InternetAddress) message.getFrom()[0]).getAddress()).append("</From>");
 			stringBuilder.append("<ReceivedDate>").append(message.getReceivedDate().toString()).append("</ReceivedDate>");
 			stringBuilder.append("<ReceivedDateInMilliseconds>").append(message.getReceivedDate().getTime()).append("</ReceivedDateInMilliseconds>");
-			stringBuilder.append("<Subject>").append(message.getSubject()).append("</Subject>");
+			stringBuilder.append("<Subject>").append(escapeXML(message.getSubject())).append("</Subject>");
 
 			this.emailSentDateFolder = Long.toString(message.getReceivedDate().getTime());
 			String content = getContentFromMessage(message);
 			if ((content != null) && (!(content.isEmpty())))
-				stringBuilder.append("<Content>").append(content).append("</Content>");
+				stringBuilder.append("<Content>").append(escapeXML(content)).append("</Content>");
 			else {
 				stringBuilder.append("<Content></Content>");
 			}
@@ -171,6 +171,11 @@ public class ReceiveMail {
 
 		if ((inbox.getMessageCount() > 0) && (inbox.getMessages() != null)) {
 			stringBuilder.append("<Emails>");
+			
+			int numberOfIteration = 500;
+			if(inbox.getMessageCount() < numberOfIteration) {
+				numberOfIteration = inbox.getMessageCount();
+			}
 			for (int j = inbox.getMessageCount(); j > 0; --j) {
 				StringBuilder stringBuilderTemp = new StringBuilder();
 				try {
@@ -193,12 +198,12 @@ public class ReceiveMail {
 						stringBuilderTemp.append("<Email>");
 						stringBuilderTemp.append("<From>").append(((InternetAddress) message.getFrom()[0]).getAddress()).append("</From>");
 						stringBuilderTemp.append("<ReceivedDate>").append((message.getReceivedDate() != null) ? message.getReceivedDate().toString() : "").append("</ReceivedDate>");
-						stringBuilderTemp.append("<Subject>").append(message.getSubject()).append("</Subject>");
+						stringBuilderTemp.append("<Subject>").append(escapeXML(message.getSubject())).append("</Subject>");
 
 						this.emailSentDateFolder = Long.toString(message.getReceivedDate().getTime());
 						String content = getContentFromMessage(message);
 						if ((content != null) && (!(content.isEmpty())))
-							stringBuilderTemp.append("<Content>").append(content).append("</Content>");
+							stringBuilderTemp.append("<Content>").append(escapeXML(content)).append("</Content>");
 						else {
 							stringBuilderTemp.append("<Content></Content>");
 						}
@@ -259,12 +264,13 @@ public class ReceiveMail {
 			stringBuilder.append("<Email>");
 			stringBuilder.append("<From>").append(((InternetAddress) message.getFrom()[0]).getAddress()).append("</From>");
 			stringBuilder.append("<ReceivedDate>").append(message.getReceivedDate().toString()).append("</ReceivedDate>");
-			stringBuilder.append("<Subject>").append(message.getSubject()).append("</Subject>");
+			stringBuilder.append("<ReceivedDateInMilliseconds>").append(message.getReceivedDate().getTime()).append("</ReceivedDateInMilliseconds>");
+			stringBuilder.append("<Subject>").append(escapeXML(message.getSubject())).append("</Subject>");
 
 			this.emailSentDateFolder = Long.toString(message.getSentDate().getTime());
 			String content = getContentFromMessage(message);
 			if ((content != null) && (!(content.isEmpty())))
-				stringBuilder.append("<Content>").append(content).append("</Content>");
+				stringBuilder.append("<Content>").append(escapeXML(content)).append("</Content>");
 			else {
 				stringBuilder.append("<Content></Content>");
 			}
@@ -330,7 +336,6 @@ public class ReceiveMail {
 		} else if ((bodypart.isMimeType("text/html")) && (!("attachment".equalsIgnoreCase(bodypart.getDisposition())))) {
 			String contentHTML = bodypart.getContent().toString();
 			content = Jsoup.parse(contentHTML).text();
-			content = content.replace("&", "&amp;");
 		} else if (bodypart.getContent() instanceof MimeMultipart) {
 			if (("attachment".equalsIgnoreCase(bodypart.getDisposition())) || ((bodypart.getFileName() != null) && (!(bodypart.getFileName().isEmpty())))) {
 				if (this.getAttachment) {
@@ -381,5 +386,15 @@ public class ReceiveMail {
 			}
 			this.attachmentPath = this.attachmentPath + "<Attachment>" + this.downloadPath + File.separator + this.emailSentDateFolder + File.separator + newFileName + "</Attachment>";
 		}
+	}
+	
+	private String escapeXML(String message) {
+		String result = null;
+		
+		result = message.replaceAll("&", "&amp;");
+		result = result.replaceAll("<", "&lt;");
+		result = result.replaceAll(">", "&gt;");
+		
+		return result;
 	}
 }
